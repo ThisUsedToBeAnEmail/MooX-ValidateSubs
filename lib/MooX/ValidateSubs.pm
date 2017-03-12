@@ -1,8 +1,69 @@
 package MooX::ValidateSubs;
 
-use 5.006;
 use strict;
 use warnings;
+
+use MooX::ReturnModifiers;
+use Params::Validate qw/validate_with validate_pos/;
+
+our $VERSION = '0.01';
+
+use constant SCALAR    => ( type => 1 );
+use constant ARRAYREF  => ( type => 2 );
+use constant HASHREF   => ( type => 4 );
+use constant CODEREF   => ( type => 8 );
+use constant GLOB      => ( type => 16 );
+use constant GLOBREF   => ( type => 32 );
+use constant SCALARREF => ( type => 64 );
+use constant UNKNOWN   => ( type => 128 );
+use constant UNDEF     => ( type => 256 );
+use constant OBJECT    => ( type => 512 );
+use constant OPT       => ( optional => 1 );
+
+sub import {
+    my $target    = caller;
+    my %modifiers = return_modifiers($target);
+
+    {
+        no strict 'refs';
+        ${"${target}::"}{$_} = ${ __PACKAGE__ . "::" }{$_}
+          foreach (
+            qw/SCALAR ARRAYREF HASHREF CODEREF GLOB GLOBREF SCALARREF UNKNOWN UNDEF OBJECT/
+          );
+    }
+
+    my $modify_subs = sub {
+        my @attr = @_;
+        while (@attr) {
+            my @names = ref $attr[0] eq 'ARRAY' ? @{ shift @attr } : shift @attr;
+            my %spec = %{ shift @attr };
+            for (@names) {
+                $modifiers{before}->(
+                    $_, sub { shift; create_validate_subs( $spec{params}, @_ ) }
+                ) if $spec{params};
+            }
+        }
+
+    };
+
+    { no strict 'refs'; *{"${target}::validate_subs"} = $modify_subs; }
+
+    return 1;
+}
+
+sub create_validate_subs {
+    my ($spec) = shift;
+
+    if ( ref $spec eq 'ARRAY' ) {
+        my @pos = grep { $_ =~ /\d/ } @{$spec};
+        return validate_pos( @_, @pos );
+    }
+    return validate_with( params => \@_, spec => $spec, stack_skip => 3 );
+}
+
+1;
+
+__END__
 
 =head1 NAME
 
@@ -14,40 +75,94 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
-
-
 =head1 SYNOPSIS
+    
+    package Im::Such::A::Defensive::Programmer;
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
-
+    use Moo;
     use MooX::ValidateSubs;
 
-    my $foo = MooX::ValidateSubs->new();
-    ...
+    validate_subs (
+        [qw/hello_world different_but_accept_the_same/] => {
+            params => {
+                one   => { SCALAR, default => 'I use params validate...' },
+                two   => { ARRAYREF },
+                three => { HASHREF, OPT },
+            },
+        },
+        a_list => {
+            params => [ SCALAR, ARRAYREF, HASHREF ],
+        }
+    );
+
+    sub hello_world { 
+        my ($self, %args) = @_;
+        
+        # yay now I know these exist
+        # $args{one} 
+        # $args{two} 
+        # $args{three} 
+    }
+    
+    sub different_but_accept_the_same {
+        my ($self, %args) = @_;
+
+    }
+
+    sub a_list {
+        my ($scalar, $arrayref, $hashref) = @_;
+
+    }
 
 =head1 EXPORT
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
+=head2 validate_subs 
 
-=head1 SUBROUTINES/METHODS
+=head2 Constants
 
-=head2 function1
+=head3 SCALAR
 
-=cut
+(type => 1)
 
-sub function1 {
-}
+=head3 ARRAYREF
 
-=head2 function2
+(type => 2)
 
-=cut
+=head3 HASHREF
 
-sub function2 {
-}
+(type => 4)
+
+=head3 CODEREF
+
+(type => 8)
+
+=head3 GLOB
+
+(type => 32)
+
+=head3 GLOBREF
+
+(type => 32)
+
+=head3 SCALARREF
+
+(type => 64)
+
+=head3 UNKNOWN
+
+(type => 128)
+
+=head3 UNDEF
+
+(type => 256)
+
+=head3 OBJECT
+
+(type => 512)
+
+=head3 OPT
+
+( optional => 1 )
 
 =head1 AUTHOR
 
@@ -58,9 +173,6 @@ Robert Acock, C<< <thisusedtobeanemail at gmail.com> >>
 Please report any bugs or feature requests to C<bug-moox-validatesubs at rt.cpan.org>, or through
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=MooX-ValidateSubs>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
-
-
-
 
 =head1 SUPPORT
 
@@ -91,9 +203,7 @@ L<http://search.cpan.org/dist/MooX-ValidateSubs/>
 
 =back
 
-
 =head1 ACKNOWLEDGEMENTS
-
 
 =head1 LICENSE AND COPYRIGHT
 
