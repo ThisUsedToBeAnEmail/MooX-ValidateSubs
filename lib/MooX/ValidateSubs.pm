@@ -4,46 +4,26 @@ use strict;
 use warnings;
 
 use MooX::ReturnModifiers;
-use Params::Validate qw/validate_with validate_pos/;
+use Carp qw/croak/;
+use Scalar::Util;
 
-our $VERSION = '0.01';
-
-use constant SCALAR    => ( type => 1 );
-use constant ARRAYREF  => ( type => 2 );
-use constant HASHREF   => ( type => 4 );
-use constant CODEREF   => ( type => 8 );
-use constant GLOB      => ( type => 16 );
-use constant GLOBREF   => ( type => 32 );
-use constant SCALARREF => ( type => 64 );
-use constant UNKNOWN   => ( type => 128 );
-use constant UNDEF     => ( type => 256 );
-use constant OBJECT    => ( type => 512 );
-use constant OPT       => ( optional => 1 );
+our $VERSION = '0.03';
 
 sub import {
     my $target    = caller;
     my %modifiers = return_modifiers($target);
-
-    {
-        no strict 'refs';
-        ${"${target}::"}{$_} = ${ __PACKAGE__ . "::" }{$_}
-          foreach (
-            qw/SCALAR ARRAYREF HASHREF CODEREF GLOB GLOBREF SCALARREF UNKNOWN UNDEF OBJECT/
-          );
-    }
-
+    
     my $modify_subs = sub {
         my @attr = @_;
         while (@attr) {
             my @names = ref $attr[0] eq 'ARRAY' ? @{ shift @attr } : shift @attr;
-            my %spec = %{ shift @attr };
-            for (@names) {
+            my $spec = shift @attr;
+            for my $name (@names) {
                 $modifiers{before}->(
-                    $_, sub { shift; create_validate_subs( $spec{params}, @_ ) }
-                ) if $spec{params};
+                    $name, sub { shift; _validate_subs( $name, 'params', $spec, @_ ) }
+                );
             }
         }
-
     };
 
     { no strict 'refs'; *{"${target}::validate_subs"} = $modify_subs; }
@@ -51,14 +31,37 @@ sub import {
     return 1;
 }
 
-sub create_validate_subs {
-    my ($spec) = shift;
-
+sub _validate_subs {
+    my ($name, $type, $spec) = (shift, shift, shift);
+    my @params = @_;
+    my @count = (scalar @params);
     if ( ref $spec eq 'ARRAY' ) {
-        my @pos = grep { $_ =~ /\d/ } @{$spec};
-        return validate_pos( @_, @pos );
+        push @count, scalar @{ $spec };
+        if ( $count[0] == 1 and ref $params[0] eq 'ARRAY' ) {
+            @params = @{ $params[0] };
+            $count[0] = scalar @params;
+        }
+        
+        $count[1] == $count[0] 
+            or croak sprintf 'Error - Invalid count in %s for sub - %s - expected - %s - got - %s',
+                $type, $name, $count[0], $count[1];
+        foreach ( 0 .. $count[1] - 1 ) {
+            not $params[$_] and $spec->[$_]->[1] and next;
+            $spec->[$_]->[0]->($params[$_]);
+        }
+    
+        return 1;
     }
-    return validate_with( params => \@_, spec => $spec, stack_skip => 3 );
+    
+    my %para = $count[0] == 1 ? %{ $params[0] } : @params;
+    my %cry = (%{$spec}, %para);
+    foreach (keys %cry) {
+        not $para{$_} and $spec->{$_}->[1] and next;
+        $spec->{$_} and $spec->{$_}->[0]->($para{$_}) 
+            or croak sprintf "Error in %s - An illegal passed key - %s - for sub %s", $type, $_, $name;   
+    }
+
+    return 1;
 }
 
 1;
@@ -67,102 +70,51 @@ __END__
 
 =head1 NAME
 
-MooX::ValidateSubs - The great new MooX::ValidateSubs!
+MooX::ValidateSubs - Validating sub routine parameters via Type::Tiny.
 
 =head1 VERSION
 
-Version 0.01
+Version 0.03
 
 =cut
 
 =head1 SYNOPSIS
     
-    package Im::Such::A::Defensive::Programmer;
+    package Welcome::To::A::World::Of::Types;
 
     use Moo;
     use MooX::ValidateSubs;
+    use Types::Standard qw/;
 
     validate_subs (
-        [qw/hello_world different_but_accept_the_same/] => {
-            params => {
-                one   => { SCALAR, default => 'I use params validate...' },
-                two   => { ARRAYREF },
-                three => { HASHREF, OPT },
-            },
+        hello_world => {
+            one   => [ Str, 1 ], # 1 means I'm optional
+            two   => [ ArrayRef ],
+            three => [ HashRef ],
         },
-        a_list => {
-            params => [ SCALAR, ARRAYREF, HASHREF ],
-        }
+        goodbye_world => [ [Str], [ArrayRef], [HashRef] ],
     );
 
     sub hello_world { 
         my ($self, %args) = @_;
         
-        # yay now I know these exist
-        # $args{one} 
-        # $args{two} 
-        # $args{three} 
-    }
-    
-    sub different_but_accept_the_same {
-        my ($self, %args) = @_;
-
+        # $args{one}    # optional string 
+        # $args{two}    # valid arrayref 
+        # $args{three}  # valid hashref
     }
 
-    sub a_list {
-        my ($scalar, $arrayref, $hashref) = @_;
-
+    sub goodbye_world {
+        my ($self, $scalar, $arrayref, $hashref) = @_;
+        
     }
 
 =head1 EXPORT
 
 =head2 validate_subs 
 
-=head2 Constants
-
-=head3 SCALAR
-
-(type => 1)
-
-=head3 ARRAYREF
-
-(type => 2)
-
-=head3 HASHREF
-
-(type => 4)
-
-=head3 CODEREF
-
-(type => 8)
-
-=head3 GLOB
-
-(type => 32)
-
-=head3 GLOBREF
-
-(type => 32)
-
-=head3 SCALARREF
-
-(type => 64)
-
-=head3 UNKNOWN
-
-(type => 128)
-
-=head3 UNDEF
-
-(type => 256)
-
-=head3 OBJECT
-
-(type => 512)
-
-=head3 OPT
-
-( optional => 1 )
+I'm a list, my key should be a reference to a sub routine. My value can either be an ArrayRef of ArrayRefs or a
+HashRef of ArrayRefs. The ArrayRefs Must always have a first index of a Type::Tiny Object, You can optionally 
+add a second index a - 1 - which will make the parameter optional. 
 
 =head1 AUTHOR
 

@@ -2,18 +2,15 @@ package t::odea::Maybe;
 
 use Moo;
 use MooX::ValidateSubs;
+use Types::Standard qw/Str ArrayRef HashRef/;
 
 validate_subs (
-    [qw/hello_hash different_but_the_same/] => {
-        params => {
-            one   => { SCALAR },
-            two   => { ARRAYREF },
-            three => { HASHREF },
-        },
+    [qw/hello_hash hello_hashref/] => {
+            one   => [ Str ],
+            two   => [ ArrayRef ],
+            three => [ HashRef ],
     },
-    a_list => {
-        params => [ SCALAR, ARRAYREF, HASHREF ],
-    }
+    [qw/a_list a_single_arrayref/] => [ [Str], [ArrayRef], [HashRef] ],
 );
 
 sub hello_hash {
@@ -23,16 +20,21 @@ sub hello_hash {
     return %args;
 }
 
-sub different_but_the_same {
-    my ($self, %args) = @_;
+sub hello_hashref {
+    my ($self, $args) = @_;
 
-    $args{four} = 'rawrrrrr';
-    return %args;
+    $args->{four} = 'd';
+    return $args;
 }
 
 sub a_list {
     my ($self, @args) = @_;    
     return @args;
+}
+
+sub a_single_arrayref {
+    my ($self, $args) = @_;    
+    return $args;
 }
 
 1;

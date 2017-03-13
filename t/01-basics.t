@@ -9,13 +9,25 @@ my %hash = $maybe->hello_hash( one => 'a', two => ['b'], three => { four => 'ahh
 is_deeply(\%hash, { one => 'a', two => ['b'], three => { four => 'ahh' }, four => 'd' });
 eval { $maybe->hello_hash };
 my $error = $@;
-like( $error, qr/^Mandatory parameters/, "hello hash fails");
+like( $error, qr/^Undef did not pass type constraint/, "hello hash fails");
+
+my $hashref = $maybe->hello_hashref({ one => 'a', two => ['b'], three => { four => 'ahh' } });
+is_deeply($hashref, { one => 'a', two => ['b'], three => { four => 'ahh' }, four => 'd' });
+eval { $maybe->hello_hashref };
+my $errorh = $@;
+like( $error, qr/^Undef did not pass type constraint/, "hello hashref fails");
 
 my @list = $maybe->a_list( 'a', ['b'], { four => 'ahh' } );
 is_deeply(\@list, [ 'a', ['b'], { four => 'ahh' } ]);
 eval { $maybe->a_list };
 my $errors = $@;
-like( $errors, qr/^0 parameters were passed/, "a list fails");
+like( $errors, qr/Error - Invalid count in params for sub - a_list - expected - 0 - got - 3/, "a list fails");
+
+my $arrayref = $maybe->a_single_arrayref([ 'a', ['b'], { four => 'ahh' } ]);
+is_deeply($arrayref, [ 'a', ['b'], { four => 'ahh' } ]);
+eval { $maybe->a_single_arrayref };
+my $errors = $@;
+like( $errors, qr/Error - Invalid count in params for sub - a_single_arrayref - expected - 0 - got - 3/, "an arrayref fails");
 
 done_testing();
 
