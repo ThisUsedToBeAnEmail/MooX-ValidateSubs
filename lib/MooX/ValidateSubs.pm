@@ -4,10 +4,8 @@ use strict;
 use warnings;
 
 use MooX::ReturnModifiers;
-use Carp qw/croak/;
-use Scalar::Util;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 sub import {
     my $target    = caller;
@@ -23,7 +21,7 @@ sub import {
                 $modifiers{has}->($store_spec => ( is => 'ro', default => sub { $spec } ));
                 unless ( $name =~ m/^\+/ ) {
                     $modifiers{before}->(
-                        $name, sub { shift->_validate_sub( $name, 'params', $store_spec, @_ ) }
+                        $name, sub { my $self = shift; return $self->_validate_sub( $name, 'params', $self->$store_spec, @_ ); }
                     );
                 }
             }
@@ -47,7 +45,7 @@ MooX::ValidateSubs - Validating sub routine parameters via Type::Tiny.
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =cut
 

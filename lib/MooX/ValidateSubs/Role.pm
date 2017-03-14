@@ -4,9 +4,7 @@ use Moo::Role;
 use Carp qw/croak/;
 
 sub _validate_sub {
-    my ($self, $name, $type, $stored_spec) = (shift, shift, shift, shift);
-    my $spec = $self->$stored_spec;
-    my @params = @_;
+    my ($self, $name, $type, $spec, @params) = @_;
     my @count = (scalar @params);
     if ( ref $spec eq 'ARRAY' ) {
         push @count, scalar @{ $spec };
@@ -14,10 +12,10 @@ sub _validate_sub {
             @params = @{ $params[0] };
             $count[0] = scalar @params;
         }
-        
-        $count[1] == $count[0] 
+        $count[2] = $count[1] - grep { $spec->[$_]->[1] } 0 .. $count[1] - 1;
+        $count[0] >= $count[2] && $count[0] <= $count[1]
             or croak sprintf 'Error - Invalid count in %s for sub - %s - expected - %s - got - %s',
-                $type, $name, $count[0], $count[1];
+                $type, $name, $count[1], $count[0];
         foreach ( 0 .. $count[1] - 1 ) {
             not $params[$_] and $spec->[$_]->[1] and next;
             $spec->[$_]->[0]->($params[$_]);
