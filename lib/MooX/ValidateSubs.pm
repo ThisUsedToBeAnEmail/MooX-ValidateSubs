@@ -7,7 +7,7 @@ use MooX::ReturnModifiers;
 use Carp qw/croak/;
 use Scalar::Util;
 
-our $VERSION = '0.03';
+our $VERSION = '0.05';
 
 sub import {
     my $target    = caller;
@@ -19,47 +19,20 @@ sub import {
             my @names = ref $attr[0] eq 'ARRAY' ? @{ shift @attr } : shift @attr;
             my $spec = shift @attr;
             for my $name (@names) {
-                $modifiers{before}->(
-                    $name, sub { shift; _validate_subs( $name, 'params', $spec, @_ ) }
-                );
+                my $store_spec = sprintf '%s_spec', $name;
+                $modifiers{has}->($store_spec => ( is => 'ro', default => sub { $spec } ));
+                unless ( $name =~ m/^\+/ ) {
+                    $modifiers{before}->(
+                        $name, sub { shift->_validate_sub( $name, 'params', $store_spec, @_ ) }
+                    );
+                }
             }
         }
     };
 
+    $target->can('_validate_sub') or $modifiers{with}->('MooX::ValidateSubs::Role');
+
     { no strict 'refs'; *{"${target}::validate_subs"} = $modify_subs; }
-
-    return 1;
-}
-
-sub _validate_subs {
-    my ($name, $type, $spec) = (shift, shift, shift);
-    my @params = @_;
-    my @count = (scalar @params);
-    if ( ref $spec eq 'ARRAY' ) {
-        push @count, scalar @{ $spec };
-        if ( $count[0] == 1 and ref $params[0] eq 'ARRAY' ) {
-            @params = @{ $params[0] };
-            $count[0] = scalar @params;
-        }
-        
-        $count[1] == $count[0] 
-            or croak sprintf 'Error - Invalid count in %s for sub - %s - expected - %s - got - %s',
-                $type, $name, $count[0], $count[1];
-        foreach ( 0 .. $count[1] - 1 ) {
-            not $params[$_] and $spec->[$_]->[1] and next;
-            $spec->[$_]->[0]->($params[$_]);
-        }
-    
-        return 1;
-    }
-    
-    my %para = $count[0] == 1 ? %{ $params[0] } : @params;
-    my %cry = (%{$spec}, %para);
-    foreach (keys %cry) {
-        not $para{$_} and $spec->{$_}->[1] and next;
-        $spec->{$_} and $spec->{$_}->[0]->($para{$_}) 
-            or croak sprintf "Error in %s - An illegal passed key - %s - for sub %s", $type, $_, $name;   
-    }
 
     return 1;
 }
@@ -74,7 +47,7 @@ MooX::ValidateSubs - Validating sub routine parameters via Type::Tiny.
 
 =head1 VERSION
 
-Version 0.03
+Version 0.05
 
 =cut
 
@@ -84,7 +57,7 @@ Version 0.03
 
     use Moo;
     use MooX::ValidateSubs;
-    use Types::Standard qw/;
+    use Types::Standard qw/Str ArrayRef HashRef/;
 
     validate_subs (
         hello_world => {
@@ -107,6 +80,19 @@ Version 0.03
         my ($self, $scalar, $arrayref, $hashref) = @_;
         
     }
+
+    package Extends::I::Announced::My::Return
+
+    use Moo;
+    extends 'Welcome::To::A::World::Of::Types';
+
+    validate_subs (
+        '+goodbye_world' => [ [Str] ],
+    );
+
+    around goodbye_world = sub {
+        $_[1] = 'And then disappeared again';
+    };
 
 =head1 EXPORT
 
@@ -131,7 +117,6 @@ automatically be notified of progress on your bug as I make changes.
 You can find documentation for this module with the perldoc command.
 
     perldoc MooX::ValidateSubs
-
 
 You can also look for information at:
 
