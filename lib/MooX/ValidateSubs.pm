@@ -5,7 +5,7 @@ use warnings;
 
 use MooX::ReturnModifiers;
 
-our $VERSION = '0.06';
+our $VERSION = '0.08';
 
 sub import {
     my $target    = caller;
@@ -64,11 +64,11 @@ __END__
 
 =head1 NAME
 
-MooX::ValidateSubs - Validating sub routine parameters via Type::Tiny.
+MooX::ValidateSubs - Validating sub routines via Type::Tiny.
 
 =head1 VERSION
 
-Version 0.06
+Version 0.08
 
 =cut
 
@@ -82,12 +82,30 @@ Version 0.06
 
     validate_subs (
         hello_world => {
-            one   => [ Str, 1 ], # 1 means I'm optional
-            two   => [ ArrayRef ],
-            three => [ HashRef ],
+            params => { 
+                one   => [ Str, 1 ], # 1 means I'm optional
+                two   => [ ArrayRef ],
+                three => [ HashRef, 'before_add_me' ],
+            },
+            returns => {
+                one   => [ Str, 1 ], # 1 means I'm optional
+                two   => [ ArrayRef ],
+                three => [ HashRef ],
+                four  => [ Str, 'not_set' ],
+            },
         },
-        goodbye_world => [ [Str], [ArrayRef], [HashRef] ],
+        goodbye_world => { params => [ [Str], [ArrayRef], [HashRef] ] },
     );
+
+    sub before_add_me {
+        return {
+            okay => 'fine',
+        };
+    }
+
+    sub add_on {
+        return 'sad face';
+    }
 
     sub hello_world { 
         my ($self, %args) = @_;
@@ -95,33 +113,97 @@ Version 0.06
         # $args{one}    # optional string 
         # $args{two}    # valid arrayref 
         # $args{three}  # valid hashref
+
+        if ( ... # some condition ... ) {
+            $args{four} = 'may or may not get set here';
+        }
+
+        return %args;
     }
 
-    sub goodbye_world {
-        my ($self, $scalar, $arrayref, $hashref) = @_;
-        
-    }
-
-    package Extends::I::Announced::My::Return
-
-    use Moo;
-    extends 'Welcome::To::A::World::Of::Types';
-
-    validate_subs (
-        '+goodbye_world' => [ [Str] ],
-    );
-
-    around goodbye_world = sub {
-        $_[1] = 'And then disappeared again';
-    };
-
-=head1 EXPORT
+=head1 Exports
 
 =head2 validate_subs 
 
-I'm a list, my key should be a reference to a sub routine. My value can either be an ArrayRef of ArrayRefs or a
-HashRef of ArrayRefs. The ArrayRefs Must always have a first index of a Type::Tiny Object, You can optionally 
-add a second index a - 1 - which will make the parameter optional. 
+I'm a key/value list, my keys should reference a sub routine, My value must now be a hash reference that 
+can contain two *optional* keys (params and returns). 
+
+    validate_subs (
+        hash_example => {
+            params => { ... },
+            returns => { ... },
+        },
+        array_example => {
+            params => [ ... ],
+            returns => [ ... ],
+        }
+    );
+
+Both params and returns value can either be an array reference of array references, that indicates we are going
+to be validating either an Array or an Array Reference, 
+
+    array_example => {
+        params => [ [], [], [] ],
+        returns => [ [], [] ],
+    },
+
+    ...
+
+    sub array_example {
+        my ($self) = shift;
+        return (shift, shift);
+    }
+
+Or a hash reference with array reference values, when validating either a Hash or Hash reference.
+
+    hash_example => {
+        params => {
+            one => [ ],
+            two => [ ],    
+        },
+        returns => {  
+            one => [ ],
+            two => [ ],
+            three => [ ],
+        },
+    },
+
+    ...
+
+    sub hash_example {
+        my ($self, %hash) = @_;
+        $hash{three} = 'add a key';
+        return %hash;
+    }
+
+The array references Must always have a first index that is a code reference, you can optionally pass a second index that can 
+either be 1, which indicates *optional*, a scalar that reference a subroutine available to *self* or a code reference 
+that gets used to fill a default value if one was not passed. 
+    
+    params => {
+        one => [ Str, sub { 'Hello World' } ],
+    },    
+    returns => [ [Str], [Str, 'say_goodbye'],
+
+    ....
+
+    sub say_goodbye {
+        my ($self) = shift;
+        return 'Goodbye';
+    } 
+
+    sub example {
+        my ($self, %hash) = @_;
+        return values %hash;
+    }
+
+...
+
+=head1 Breaking things
+
+I decided to make some breaking changes so 0.07 syntax is not compatible with 0.06--. I also changed from 
+*before* to *around* as I want to modify $args. If you prefer the *before* approach it can currently be found here - 
+L<https://github.com/ThisUsedToBeAnEmail/MooX-TypeParams>.
 
 =head1 AUTHOR
 
@@ -203,6 +285,7 @@ CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR
 CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE PACKAGE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+I live in my own world it's fine.
 
 =cut
 
