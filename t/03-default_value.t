@@ -11,7 +11,8 @@ use Test::More;
             params => {
                 one => [Str, sub { 'Hello World' }], 
                 two => [Str, sub { 'Goodbye World' }], 
-                three => [Str] 
+                three => [Str],
+                four => [Str, 1],
             },
         }
     );

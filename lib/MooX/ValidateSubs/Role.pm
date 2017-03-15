@@ -18,7 +18,7 @@ sub _validate_sub {
             or croak sprintf 'Error - Invalid count in %s for sub - %s - expected - %s - got - %s',
                 $type, $name, $count[1], $count[0];
         foreach ( 0 .. $count[1] - 1 ) {
-            not $params[$_] and $spec->[$_]->[1] and next;
+            not $params[$_] and $spec->[$_]->[1] and ($spec->[$_]->[1] == 1 and next or $params[$_] = _default($spec->[$_]->[1]));
             $params[$_] = $spec->[$_]->[0]->($params[$_]);
         }
     
@@ -28,12 +28,18 @@ sub _validate_sub {
     my %para = $count[0] == 1 ? %{ $params[0] } : @params;
     my %cry = (%{$spec}, %para);
     foreach (keys %cry) {
-        not $para{$_} and $spec->{$_}->[1] and next;
+        not $para{$_} and $spec->{$_}->[1] and ($spec->{$_}->[1] == 1 and next or $para{$_} = _default($spec->{$_}->[1]));
         $spec->{$_} and $para{$_} = $spec->{$_}->[0]->($para{$_}) 
             or croak sprintf "Error in %s - An illegal passed key - %s - for sub %s", $type, $_, $name;   
     }
 
     return $count[0] == 1 ? \%para : %para;
+}
+
+sub _default {
+    my $default = shift;
+    
+    return $default->();
 }
 
 1;
