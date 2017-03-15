@@ -6,11 +6,15 @@ use Types::Standard qw/Str ArrayRef HashRef/;
 
 validate_subs (
     [qw/hello_hash hello_hashref/] => {
+        params => {
             one   => [ Str ],
             two   => [ ArrayRef ],
             three => [ HashRef ],
+        },
     },
-    [qw/a_list a_single_arrayref/] => [ [Str], [ArrayRef], [HashRef] ],
+    [qw/a_list a_single_arrayref/] => {
+        params => [ [Str], [ArrayRef], [HashRef] ],
+    }
 );
 
 sub hello_hash {

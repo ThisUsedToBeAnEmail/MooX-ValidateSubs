@@ -23,15 +23,16 @@ sub import {
                     $modifiers{around}->(
                         $name, sub { 
                             my ($orig, $self, @params) = @_; 
-                             
-                            if ( my $param_spec = $spec->{params} ) {
+                            my $current_spec = $self->$store_spec; 
+                            use Data::Dumper;
+                            if ( my $param_spec = $current_spec->{params} ) {
                                 @params = $self->_validate_sub( $name, 'params', $param_spec, @params ); 
                             }
-                            
+                            warn Dumper \@params; 
                             @params = $self->$orig(@params);
 
-                            if ( my $return_spec = $spec->{returns} ) {
-                                return $self->_validate_sub( $name, 'returns', $spec->{returns}, @params );
+                            if ( my $return_spec = $current_spec->{returns} ) {
+                                return $self->_validate_sub( $name, 'returns', $return_spec, @params );
                             }
                             
                             return @params;
