@@ -7,7 +7,7 @@ use Types::Standard qw/Str ArrayRef HashRef/;
 validate_subs (
     [qw/hello_hash hello_hashref/] => {
         params => {
-            one   => [ Str ],
+            one   => [ Str, sub { 'I Have a Default Value' } ],
             two   => [ ArrayRef ],
             three => [ HashRef ],
         },
