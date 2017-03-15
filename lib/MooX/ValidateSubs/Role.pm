@@ -11,6 +11,7 @@ sub _validate_sub {
         if ( $count[0] == 1 and ref $params[0] eq 'ARRAY' ) {
             @params = @{ $params[0] };
             $count[0] = scalar @params;
+            $count[3] = 'ref';
         }
         $count[2] = $count[1] - grep { $spec->[$_]->[1] } 0 .. $count[1] - 1;
         $count[0] >= $count[2] && $count[0] <= $count[1]
@@ -18,21 +19,21 @@ sub _validate_sub {
                 $type, $name, $count[1], $count[0];
         foreach ( 0 .. $count[1] - 1 ) {
             not $params[$_] and $spec->[$_]->[1] and next;
-            $spec->[$_]->[0]->($params[$_]);
+            $params[$_] = $spec->[$_]->[0]->($params[$_]);
         }
     
-        return 1;
+        return defined $count[3] ? \@params : @params;
     }
     
     my %para = $count[0] == 1 ? %{ $params[0] } : @params;
     my %cry = (%{$spec}, %para);
     foreach (keys %cry) {
         not $para{$_} and $spec->{$_}->[1] and next;
-        $spec->{$_} and $spec->{$_}->[0]->($para{$_}) 
+        $spec->{$_} and $para{$_} = $spec->{$_}->[0]->($para{$_}) 
             or croak sprintf "Error in %s - An illegal passed key - %s - for sub %s", $type, $_, $name;   
     }
 
-    return 1;
+    return $count[0] == 1 ? \%para : %para;
 }
 
 1;

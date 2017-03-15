@@ -23,6 +23,9 @@ eval { $maybe->a_list };
 my $errors = $@;
 like( $errors, qr/Error - Invalid count in params for sub - a_list - expected - 3 - got - 0/, "a list fails");
 
+my @okay = $maybe->okay_test;
+is_deeply(\@okay, [ 'a', ['b'], { four => 'ahh' } ]);
+
 my $arrayref = $maybe->a_single_arrayref([ 'a', ['b'], { four => 'ahh' } ]);
 is_deeply($arrayref, [ 'a', ['b'], { four => 'ahh' } ]);
 eval { $maybe->a_single_arrayref };

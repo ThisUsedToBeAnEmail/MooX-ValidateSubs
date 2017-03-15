@@ -28,14 +28,14 @@ sub import {
                             if ( my $param_spec = $current_spec->{params} ) {
                                 @params = $self->_validate_sub( $name, 'params', $param_spec, @params ); 
                             }
-                            warn Dumper \@params; 
-                            @params = $self->$orig(@params);
-
-                            if ( my $return_spec = $current_spec->{returns} ) {
-                                return $self->_validate_sub( $name, 'returns', $return_spec, @params );
-                            }
                             
-                            return @params;
+                            @params = $self->$orig(@params);
+                            
+                            if ( my $param_spec = $current_spec->{returns} ) {
+                                @params = $self->_validate_sub( $name, 'returns', $param_spec, @params ); 
+                            }
+
+                            return wantarray ? @params : shift @params;
                         }
                     );
                 }

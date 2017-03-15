@@ -7,7 +7,7 @@ use Test::More;
     use Types::Standard qw/Str/;
 
     validate_subs(
-        array => [ [Str], [Str, 1], [Str, 1] ],
+        array => { params => [ [Str], [Str, 1], [Str, 1] ] },
     );
 
     sub array {
