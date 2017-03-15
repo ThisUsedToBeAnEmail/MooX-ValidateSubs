@@ -22,21 +22,19 @@ sub import {
                 unless ( $name =~ m/^\+/ ) {
                     $modifiers{around}->(
                         $name, sub { 
-                            my ($self, $orig) = (shift, shift); 
-                            my @params = @_;
-                            my $spec = $self->$store_spec;
-                            
+                            my ($orig, $self, @params) = @_; 
+                             
                             if ( my $param_spec = $spec->{params} ) {
                                 @params = $self->_validate_sub( $name, 'params', $param_spec, @params ); 
                             }
                             
-                            my @return_values = $self->$orig(@valid_args);
+                            @params = $self->$orig(@params);
 
                             if ( my $return_spec = $spec->{returns} ) {
-                                return $self->_validate_sub( $name, 'returns', $spec->{returns}, @return_values );
+                                return $self->_validate_sub( $name, 'returns', $spec->{returns}, @params );
                             }
                             
-                            return @return_values;
+                            return @params;
                         }
                     );
                 }
