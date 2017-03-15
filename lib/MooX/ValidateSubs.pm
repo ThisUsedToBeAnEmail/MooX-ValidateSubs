@@ -10,7 +10,7 @@ our $VERSION = '0.06';
 sub import {
     my $target    = caller;
     my %modifiers = return_modifiers($target);
-    
+
     my $validate_subs = sub {
         my @attr = @_;
         while (@attr) {
@@ -18,21 +18,26 @@ sub import {
             my $spec = shift @attr;
             for my $name (@names) {
                 my $store_spec = sprintf '%s_spec', $name;
-                $modifiers{has}->($store_spec => ( is => 'ro', default => sub { $spec } ));
+                $modifiers{has}->( $store_spec => ( is => 'ro', default => sub { $spec } ) );
                 unless ( $name =~ m/^\+/ ) {
                     $modifiers{around}->(
-                        $name, sub { 
-                            my ($orig, $self, @params) = @_; 
-                            my $current_spec = $self->$store_spec; 
-                            use Data::Dumper;
+                        $name, 
+                        sub {
+                            my ( $orig, $self, @params ) = @_;
+                            my $current_spec = $self->$store_spec;
+                            
                             if ( my $param_spec = $current_spec->{params} ) {
-                                @params = $self->_validate_sub( $name, 'params', $param_spec, @params ); 
+                                @params = $self->_validate_sub( 
+                                    $name, 'params', $param_spec, @params 
+                                );
                             }
-                            
+
                             @params = $self->$orig(@params);
-                            
+
                             if ( my $param_spec = $current_spec->{returns} ) {
-                                @params = $self->_validate_sub( $name, 'returns', $param_spec, @params ); 
+                                @params = $self->_validate_sub( 
+                                    $name, 'returns', $param_spec, @params 
+                                );
                             }
 
                             return wantarray ? @params : shift @params;
@@ -42,12 +47,12 @@ sub import {
             }
         }
     };
-    
+
     $target->can('_validate_sub') or $modifiers{with}->('MooX::ValidateSubs::Role');
 
-    { 
-        no strict 'refs'; 
-        *{"${target}::validate_subs"} = $validate_subs; 
+    {
+        no strict 'refs';
+        *{"${target}::validate_subs"} = $validate_subs;
     }
 
     return 1;
