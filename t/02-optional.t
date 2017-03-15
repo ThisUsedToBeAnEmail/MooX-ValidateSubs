@@ -16,7 +16,7 @@ use Test::More;
     }
 }
 
-my $maybe = One::Two::Three->new();
+my $maybe = One::Two::Three->new(b => 'ahhhh');
 
 my @list = $maybe->array( 'a', 'b', 'c' );
 is_deeply(\@list, [ 'a', 'b', 'c' ], "array returns 3");

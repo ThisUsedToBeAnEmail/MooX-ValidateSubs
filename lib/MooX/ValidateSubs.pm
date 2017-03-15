@@ -11,7 +11,7 @@ sub import {
     my $target    = caller;
     my %modifiers = return_modifiers($target);
     
-    my $modify_subs = sub {
+    my $validate_subs = sub {
         my @attr = @_;
         while (@attr) {
             my @names = ref $attr[0] eq 'ARRAY' ? @{ shift @attr } : shift @attr;
@@ -20,17 +20,36 @@ sub import {
                 my $store_spec = sprintf '%s_spec', $name;
                 $modifiers{has}->($store_spec => ( is => 'ro', default => sub { $spec } ));
                 unless ( $name =~ m/^\+/ ) {
-                    $modifiers{before}->(
-                        $name, sub { my $self = shift; return $self->_validate_sub( $name, 'params', $self->$store_spec, @_ ); }
+                    $modifiers{around}->(
+                        $name, sub { 
+                            my ($self, $orig) = (shift, shift); 
+                            my @params = @_;
+                            my $spec = $self->$store_spec;
+                            
+                            if ( my $param_spec = $spec->{params} ) {
+                                @params = $self->_validate_sub( $name, 'params', $param_spec, @params ); 
+                            }
+                            
+                            my @return_values = $self->$orig(@valid_args);
+
+                            if ( my $return_spec = $spec->{returns} ) {
+                                return $self->_validate_sub( $name, 'returns', $spec->{returns}, @return_values );
+                            }
+                            
+                            return @return_values;
+                        }
                     );
                 }
             }
         }
     };
-
+    
     $target->can('_validate_sub') or $modifiers{with}->('MooX::ValidateSubs::Role');
 
-    { no strict 'refs'; *{"${target}::validate_subs"} = $modify_subs; }
+    { 
+        no strict 'refs'; 
+        *{"${target}::validate_subs"} = $validate_subs; 
+    }
 
     return 1;
 }
