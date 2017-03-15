@@ -10,12 +10,16 @@ use Test::More;
         hash => { 
             params => {
                 one => [Str, sub { 'Hello World' }], 
-                two => [Str, sub { 'Goodbye World' }], 
+                two => [Str, 'build_two' ], 
                 three => [Str],
                 four => [Str, 1],
             },
         }
     );
+
+    sub build_two {
+        return 'Goodbye World';
+    }
 
     sub hash {
         my ($self, %array) = @_;
