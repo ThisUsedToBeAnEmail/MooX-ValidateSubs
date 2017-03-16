@@ -91,7 +91,7 @@ Version 0.08
                 one   => [ Str, 1 ], # 1 means I'm optional
                 two   => [ ArrayRef ],
                 three => [ HashRef ],
-                four  => [ Str, 'not_set' ],
+                four  => [ Str, 'add_on' ],
             },
         },
         goodbye_world => { params => [ [Str], [ArrayRef], [HashRef] ] },
