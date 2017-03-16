@@ -13,6 +13,7 @@ t/03-default_value.t
 t/04-returns.t
 t/05-combined.t
 t/06-extends.t
+t/07-extends_does_it_get_complicated.t
 t/manifest.t
 t/odea/Maybe.pm
 t/odea/Returns.pm

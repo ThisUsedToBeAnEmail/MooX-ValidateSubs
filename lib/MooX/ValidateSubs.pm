@@ -5,7 +5,7 @@ use warnings;
 
 use MooX::ReturnModifiers;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 sub import {
     my $target    = caller;
@@ -68,7 +68,7 @@ MooX::ValidateSubs - Validating sub routines via Type::Tiny.
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =cut
 
@@ -143,8 +143,8 @@ Both params and returns value can either be an array reference of array referenc
 to be validating either an Array or an Array Reference, 
 
     array_example => {
-        params => [ [], [], [] ],
-        returns => [ [], [] ],
+        params => [ [Str], [HashRef], [Str] ],
+        returns => [ [Str], [HashRef] ],
     },
 
     ...
@@ -158,13 +158,13 @@ Or a hash reference with array reference values, when validating either a Hash o
 
     hash_example => {
         params => {
-            one => [ ],
-            two => [ ],    
+            one => [ Str ],
+            two => [ HashRef ],    
         },
         returns => {  
-            one => [ ],
-            two => [ ],
-            three => [ ],
+            one => [ Str ],
+            two => [ HashRef ],
+            three => [ Str ],
         },
     },
 
@@ -177,19 +177,25 @@ Or a hash reference with array reference values, when validating either a Hash o
     }
 
 The array references Must always have a first index that is a code reference, you can optionally pass a second index that can 
-either be 1, which indicates *optional*, a scalar that reference a subroutine available to *self* or a code reference 
+either be 1, which indicates *optional*, a scalar that reference a subroutine/attribute available to *self* or a code reference 
 that gets used to fill a default value if one was not passed. 
     
     params => {
         one => [ Str, sub { 'Hello World' } ],
+        two => [ Str, 'basics' ],
     },    
-    returns => [ [Str], [Str, 'say_goodbye'],
+    returns => [ [Str], [Str], [Str, 'say_goodbye'],
 
     ....
 
+    has basics => (
+        is => 'ro',
+        default => sub { "How are you" },
+    );
+
     sub say_goodbye {
         my ($self) = shift;
-        return 'Goodbye';
+        return 'In a rush, goodbye.';
     } 
 
     sub example {
@@ -201,7 +207,7 @@ that gets used to fill a default value if one was not passed.
 
 =head1 Breaking things
 
-I decided to make some breaking changes so 0.07 syntax is not compatible with 0.06--. I also changed from 
+I decided to make some breaking changes so 0.07++ syntax is not compatible with 0.06--. I also changed from 
 *before* to *around* as I want to modify $args. If you prefer the *before* approach it can currently be found here - 
 L<https://github.com/ThisUsedToBeAnEmail/MooX-TypeParams>.
 
@@ -284,8 +290,6 @@ YOUR LOCAL LAW. UNLESS REQUIRED BY LAW, NO COPYRIGHT HOLDER OR
 CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR
 CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE PACKAGE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-I live in my own world it's fine.
 
 =cut
 
