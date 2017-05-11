@@ -25,7 +25,7 @@ sub _validate_sub {
                 $types{$key} =
                     $default eq '1' ? Types::Standard::Optional->of($constraint) : $constraint;
             }
-            compile_named(%types);
+			compile_named(%types);
         }
     });
 

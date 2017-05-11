@@ -28,7 +28,10 @@ WriteMakefile(
     clean => { FILES => 'MooX-ValidateSubs-*' },
     META_MERGE => {
         'meta-spec' => { version => 2 },
-        resources => {
+        x_contributors => [
+			"Toby Inkster (TOBYINK) <tobyink\@cpan.org>"
+		],
+		resources => {
             repository => {
                 type => 'git',
                 url  => 'https://github.com/ThisUsedToBeAnEmail/MooX-ValidateSubs.git',
