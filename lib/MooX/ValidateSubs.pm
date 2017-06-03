@@ -5,7 +5,7 @@ use warnings;
 
 use MooX::ReturnModifiers;
 
-our $VERSION = '1.002000';
+our $VERSION = '1.012000';
 
 sub import {
 	my $target	= caller;
