@@ -19,7 +19,7 @@ WriteMakefile(
         'Test::More' => 0,
     },
     PREREQ_PM => {
-        'MooX::ReturnModifiers' => 0.03,
+        'MooX::ReturnModifiers' => '0.09',
 		'Type::Tiny' => '1.002000', 
 		'Moo' => 0,
         'Carp' => 0,
